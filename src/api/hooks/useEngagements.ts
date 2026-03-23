@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import type { Engagement, CreateEngagement } from '@/api/types/engagement'
+import type { Engagement, CreateEngagement, TeamMember, EngagementFinancials } from '@/api/types/engagement'
 import type { PaginatedResponse } from '@/api/types/common'
 
 interface EngagementFilters {
@@ -81,6 +81,106 @@ export function useMoveEngagementStage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['engagements'] })
+    },
+  })
+}
+
+// --- Team hooks ---
+
+export function useEngagementTeam(engagementId: string | undefined) {
+  return useQuery({
+    queryKey: ['engagements', engagementId, 'team'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<TeamMember[]>(`/engagements/${engagementId}/team`)
+      return data
+    },
+    enabled: !!engagementId,
+  })
+}
+
+export function useAddTeamMember() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      engagementId,
+      userId,
+      role,
+    }: {
+      engagementId: string
+      userId: string
+      role: string
+    }) => {
+      const { data } = await apiClient.post<TeamMember>(
+        `/engagements/${engagementId}/team`,
+        { user_id: userId, role }
+      )
+      return data
+    },
+    onSuccess: (_data, { engagementId }) => {
+      queryClient.invalidateQueries({ queryKey: ['engagements', engagementId, 'team'] })
+    },
+  })
+}
+
+export function useRemoveTeamMember() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      engagementId,
+      userId,
+    }: {
+      engagementId: string
+      userId: string
+    }) => {
+      await apiClient.delete(`/engagements/${engagementId}/team/${userId}`)
+    },
+    onSuccess: (_data, { engagementId }) => {
+      queryClient.invalidateQueries({ queryKey: ['engagements', engagementId, 'team'] })
+    },
+  })
+}
+
+// --- Financials hooks ---
+
+export function useEngagementFinancials(engagementId: string | undefined) {
+  return useQuery({
+    queryKey: ['engagements', engagementId, 'financials'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<EngagementFinancials>(
+        `/engagements/${engagementId}/financials`
+      )
+      return data
+    },
+    enabled: !!engagementId,
+  })
+}
+
+export function useRecordFee() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      engagementId,
+      type,
+      amount,
+      description,
+    }: {
+      engagementId: string
+      type: string
+      amount: number
+      description?: string
+    }) => {
+      const { data } = await apiClient.post(`/engagements/${engagementId}/fees`, {
+        type,
+        amount,
+        description,
+      })
+      return data
+    },
+    onSuccess: (_data, { engagementId }) => {
+      queryClient.invalidateQueries({ queryKey: ['engagements', engagementId, 'financials'] })
     },
   })
 }

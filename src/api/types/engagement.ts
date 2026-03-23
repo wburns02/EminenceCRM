@@ -61,3 +61,53 @@ export const CreateEngagementSchema = z.object({
 })
 
 export type CreateEngagement = z.infer<typeof CreateEngagementSchema>
+
+// Team member on an engagement
+export const TeamMemberSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  first_name: z.string(),
+  last_name: z.string(),
+  email: z.string().nullable().optional(),
+  role: z.string(), // 'lead_advisor' | 'analyst' | 'associate' | 'partner' | 'support'
+  added_at: z.string().optional(),
+})
+
+export type TeamMember = z.infer<typeof TeamMemberSchema>
+
+// Fee payment record
+export const FeePaymentSchema = z.object({
+  id: z.string(),
+  type: z.string(), // 'retainer' | 'success_fee' | 'expense' | 'other'
+  amount: z.number(),
+  description: z.string().nullable().optional(),
+  status: z.string().optional(), // 'invoiced' | 'paid' | 'waived'
+  date: z.string(),
+})
+
+export type FeePayment = z.infer<typeof FeePaymentSchema>
+
+// Fee structure stored in engagement.fee_structure JSONB
+export const FeeStructureSchema = z.object({
+  retainer_monthly: z.number().optional(),
+  retainer_credited: z.boolean().optional(),
+  success_fee_tiers: z.array(z.object({
+    up_to: z.number().nullable().optional(),
+    rate: z.number(),
+  })).optional(),
+  minimum_fee: z.number().optional(),
+  tail_period_months: z.number().optional(),
+})
+
+export type FeeStructure = z.infer<typeof FeeStructureSchema>
+
+// Full financials response
+export const EngagementFinancialsSchema = z.object({
+  fee_structure: FeeStructureSchema.nullable().optional(),
+  payments: z.array(FeePaymentSchema),
+  total_retainer_collected: z.number(),
+  total_fees_collected: z.number(),
+  projected_success_fee: z.number().nullable().optional(),
+})
+
+export type EngagementFinancials = z.infer<typeof EngagementFinancialsSchema>

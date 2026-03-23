@@ -10,7 +10,7 @@ const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage
 // Main pages
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'))
 const PipelinePage = lazy(() => import('@/features/pipeline/PipelinePage'))
-const EngagementDetailPage = lazy(() => import('@/features/pipeline/EngagementDetailPage'))
+const EngagementDetailPage = lazy(() => import('@/features/engagements/EngagementDetailPage'))
 const CompaniesPage = lazy(() => import('@/features/companies/CompaniesPage'))
 const CompanyForm = lazy(() => import('@/features/companies/CompanyForm'))
 const CompanyDetailPage = lazy(() => import('@/features/companies/CompanyDetailPage'))

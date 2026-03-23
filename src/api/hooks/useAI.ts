@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import type { AIAlert } from '@/api/types/ai'
 
@@ -8,6 +8,52 @@ export function useAIAlerts() {
     queryFn: async () => {
       const { data } = await apiClient.get<AIAlert[]>('/ai/alerts')
       return data
+    },
+  })
+}
+
+export function useEngagementAIAlerts(engagementId: string | undefined) {
+  return useQuery({
+    queryKey: ['ai', 'alerts', { engagement_id: engagementId }],
+    queryFn: async () => {
+      const { data } = await apiClient.get<AIAlert[]>('/ai/alerts', {
+        params: { engagement_id: engagementId },
+      })
+      return data
+    },
+    enabled: !!engagementId,
+  })
+}
+
+export function useGenerateDealSummary() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (engagementId: string) => {
+      const { data } = await apiClient.post<{ summary: string }>('/ai/deal-summary', {
+        engagement_id: engagementId,
+      })
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ai', 'alerts'] })
+    },
+  })
+}
+
+export function useScoreBuyers() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (engagementId: string) => {
+      const { data } = await apiClient.post<{ results: Array<{ buyer_id: string; score: number; reasoning: string }> }>(
+        '/ai/buyer-match',
+        { engagement_id: engagementId }
+      )
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ai'] })
     },
   })
 }

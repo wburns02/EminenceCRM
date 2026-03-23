@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import type { Activity } from '@/api/types/activity'
 import type { PaginatedResponse } from '@/api/types/common'
@@ -11,6 +11,43 @@ export function useRecentActivities(pageSize = 20) {
         params: { page_size: pageSize },
       })
       return data
+    },
+  })
+}
+
+export function useEngagementActivities(engagementId: string | undefined, typeFilter?: string) {
+  return useQuery({
+    queryKey: ['activities', { engagement_id: engagementId, type: typeFilter }],
+    queryFn: async () => {
+      const params: Record<string, string | number> = {
+        engagement_id: engagementId!,
+        page_size: 100,
+      }
+      if (typeFilter && typeFilter !== 'all') params.type = typeFilter
+      const { data } = await apiClient.get<PaginatedResponse<Activity>>('/activities', { params })
+      return data
+    },
+    enabled: !!engagementId,
+  })
+}
+
+export function useCreateActivity() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: {
+      type: string
+      subject: string
+      description?: string
+      engagement_id?: string
+      contact_id?: string
+      duration_minutes?: number
+    }) => {
+      const { data } = await apiClient.post<Activity>('/activities', payload)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] })
     },
   })
 }
