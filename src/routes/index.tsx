@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Skeleton } from '@/components/ui/Skeleton'
 
@@ -10,7 +10,6 @@ const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage
 // Main pages
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'))
 const PipelinePage = lazy(() => import('@/features/pipeline/PipelinePage'))
-const NewEngagementForm = lazy(() => import('@/features/pipeline/NewEngagementForm'))
 const EngagementDetailPage = lazy(() => import('@/features/pipeline/EngagementDetailPage'))
 const CompaniesPage = lazy(() => import('@/features/companies/CompaniesPage'))
 const CompanyForm = lazy(() => import('@/features/companies/CompanyForm'))
@@ -57,7 +56,7 @@ export default function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="pipeline" element={<PipelinePage />} />
-          <Route path="engagements/new" element={<NewEngagementForm />} />
+          <Route path="engagements/new" element={<Navigate to="/pipeline" replace />} />
           <Route path="engagements/:id" element={<EngagementDetailPage />} />
           <Route path="companies" element={<CompaniesPage />} />
           <Route path="companies/new" element={<CompanyForm />} />
