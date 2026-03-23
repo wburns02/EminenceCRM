@@ -1,7 +1,8 @@
-import { Bell, ChevronDown, LogOut, User } from 'lucide-react'
+import { ChevronDown, LogOut, User } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { useAuth } from '@/features/auth/useAuth'
+import NotificationBell from '@/components/shared/NotificationBell'
 
 function TopBar() {
   const { user, logout } = useAuth()
@@ -18,10 +19,7 @@ function TopBar() {
       {/* Right side */}
       <div className="flex items-center gap-3">
         {/* Notification bell */}
-        <button className="relative p-2 rounded-lg text-text-secondary hover:bg-gray-100 transition-colors">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full" />
-        </button>
+        <NotificationBell />
 
         {/* User dropdown */}
         <Dropdown
