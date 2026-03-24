@@ -39,11 +39,15 @@ export function useCreateActivity() {
       type: string
       subject: string
       description?: string
+      body?: string
       engagement_id?: string
       contact_id?: string
       duration_minutes?: number
     }) => {
-      const { data } = await apiClient.post<Activity>('/activities', payload)
+      // Backend expects 'body' not 'description'
+      const { description, ...rest } = payload
+      const apiPayload = { ...rest, body: payload.body || description }
+      const { data } = await apiClient.post<Activity>('/activities', apiPayload)
       return data
     },
     onSuccess: () => {
