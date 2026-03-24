@@ -6,8 +6,9 @@ export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data } = await apiClient.get<Notification[]>('/notifications')
-      return data
+      const { data } = await apiClient.get('/notifications')
+      // API may return {items: [...]} or array directly
+      return (data?.items ?? data ?? []) as Notification[]
     },
     refetchInterval: 30_000,
   })
@@ -17,8 +18,8 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ count: number }>('/notifications/unread-count')
-      return data.count
+      const { data } = await apiClient.get<{ unread: number }>('/notifications/count')
+      return data.unread ?? 0
     },
     refetchInterval: 30_000,
   })

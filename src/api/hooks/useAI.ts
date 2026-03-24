@@ -6,8 +6,9 @@ export function useAIAlerts() {
   return useQuery({
     queryKey: ['ai', 'alerts'],
     queryFn: async () => {
-      const { data } = await apiClient.get<AIAlert[]>('/ai/alerts')
-      return data
+      const { data } = await apiClient.get('/ai/alerts')
+      // API returns {items: [...], total: N} — extract items array
+      return (data?.items ?? data ?? []) as AIAlert[]
     },
   })
 }
@@ -16,10 +17,10 @@ export function useEngagementAIAlerts(engagementId: string | undefined) {
   return useQuery({
     queryKey: ['ai', 'alerts', { engagement_id: engagementId }],
     queryFn: async () => {
-      const { data } = await apiClient.get<AIAlert[]>('/ai/alerts', {
+      const { data } = await apiClient.get('/ai/alerts', {
         params: { engagement_id: engagementId },
       })
-      return data
+      return (data?.items ?? data ?? []) as AIAlert[]
     },
     enabled: !!engagementId,
   })
