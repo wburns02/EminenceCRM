@@ -209,7 +209,7 @@ function RecentDocumentsView() {
 }
 
 function ByEngagementView() {
-  const { data: engagementsData, isLoading } = useEngagements({ page_size: 200 })
+  const { data: engagementsData, isLoading } = useEngagements({ page_size: 100 })
   const engagements = engagementsData?.items ?? []
 
   if (isLoading) {
@@ -271,7 +271,7 @@ export default function DocumentCenterPage() {
   const [linkType, setLinkType] = useState('other')
   const linkDoc = useLinkDocument()
 
-  const { data: engagementsData } = useEngagements({ page_size: 200 })
+  const { data: engagementsData } = useEngagements({ page_size: 100 })
   const engagements = engagementsData?.items ?? []
 
   const handleUpload = async () => {

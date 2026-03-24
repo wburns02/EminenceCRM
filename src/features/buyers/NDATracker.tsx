@@ -164,7 +164,7 @@ function NDATrackerInner({ engagements }: { engagements: Engagement[] }) {
 }
 
 export default function NDATracker() {
-  const { data: engagementsData, isLoading } = useEngagements({ page_size: 200 })
+  const { data: engagementsData, isLoading } = useEngagements({ page_size: 100 })
 
   if (isLoading) {
     return (

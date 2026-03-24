@@ -22,7 +22,7 @@ export function useEngagements(filters: EngagementFilters = {}) {
       if (filters.lead_advisor_id) params.lead_advisor_id = filters.lead_advisor_id
       if (filters.search) params.search = filters.search
       params.page = filters.page ?? 1
-      params.page_size = filters.page_size ?? 200
+      params.page_size = filters.page_size ?? 100
 
       const { data } = await apiClient.get<PaginatedResponse<Engagement>>('/engagements', { params })
       return data

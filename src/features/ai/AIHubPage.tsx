@@ -39,7 +39,7 @@ const CIM_SECTIONS = [
 function DealSummaryPanel() {
   const [selectedDeal, setSelectedDeal] = useState('')
   const [summary, setSummary] = useState('')
-  const { data: engagementsData } = useEngagements({ page_size: 200 })
+  const { data: engagementsData } = useEngagements({ page_size: 100 })
   const generateSummary = useGenerateDealSummary()
 
   const engagements = engagementsData?.items ?? []
@@ -97,7 +97,7 @@ function DealSummaryPanel() {
 function BuyerMatchingPanel() {
   const [selectedDeal, setSelectedDeal] = useState('')
   const [results, setResults] = useState<Array<{ buyer_id: string; score: number; reasoning: string }>>([])
-  const { data: engagementsData } = useEngagements({ page_size: 200 })
+  const { data: engagementsData } = useEngagements({ page_size: 100 })
   const scoreBuyers = useScoreBuyers()
 
   const engagements = engagementsData?.items ?? []
@@ -182,7 +182,7 @@ function CIMAssistantPanel() {
   const [selectedDeal, setSelectedDeal] = useState('')
   const [selectedSection, setSelectedSection] = useState<string>(CIM_SECTIONS[0])
   const [content, setContent] = useState('')
-  const { data: engagementsData } = useEngagements({ page_size: 200 })
+  const { data: engagementsData } = useEngagements({ page_size: 100 })
   const generateCIM = useGenerateCIMDraft()
 
   const engagements = engagementsData?.items ?? []

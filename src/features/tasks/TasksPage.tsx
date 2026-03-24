@@ -124,7 +124,7 @@ export default function TasksPage() {
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
   const { data: myTasks, isLoading } = useMyTasks()
-  const { data: engagementsData } = useEngagements({ page_size: 200 })
+  const { data: engagementsData } = useEngagements({ page_size: 100 })
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
 

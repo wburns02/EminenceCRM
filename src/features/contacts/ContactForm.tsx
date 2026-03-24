@@ -21,7 +21,7 @@ export default function ContactForm() {
   const { data: existing, isLoading: loadingExisting } = useContact(id)
   const createMutation = useCreateContact()
   const updateMutation = useUpdateContact()
-  const { data: companiesData } = useCompanies({ page_size: 200 })
+  const { data: companiesData } = useCompanies({ page_size: 100 })
 
   const {
     register,
