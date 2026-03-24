@@ -35,11 +35,19 @@ export default function PipelinePage() {
     search: search || undefined,
   })
 
-  const { data: stages, isLoading: stagesLoading } = useStages()
+  const { data: allStages, isLoading: stagesLoading } = useStages()
   const moveStageMutation = useMoveEngagementStage()
 
   const engagements = engagementsData?.items ?? []
   const isLoading = engagementsLoading || stagesLoading
+
+  // Filter stages by selected deal type (default to sell_side for kanban)
+  const filteredStages = (allStages ?? []).filter((s) => {
+    if (typeFilter === 'sell_side') return s.deal_type === 'sell_side'
+    if (typeFilter === 'buy_side') return s.deal_type === 'buy_side'
+    // "All Types" — show sell_side stages by default (most common), but include all engagements
+    return s.deal_type === 'sell_side'
+  })
 
   const handleMoveStage = useCallback(
     (engagementId: string, stageId: string) => {
@@ -127,10 +135,9 @@ export default function PipelinePage() {
           className="w-40"
         >
           <option value="all">All Statuses</option>
-          <option value="prospect">Prospect</option>
+          <option value="pipeline">Pipeline</option>
+          <option value="engaged">Engaged</option>
           <option value="active">Active</option>
-          <option value="due_diligence">Due Diligence</option>
-          <option value="negotiation">Negotiation</option>
           <option value="closed_won">Closed Won</option>
           <option value="closed_lost">Closed Lost</option>
           <option value="on_hold">On Hold</option>
@@ -149,7 +156,7 @@ export default function PipelinePage() {
       {view === 'kanban' && (
         <PipelineKanban
           engagements={engagements}
-          stages={stages ?? []}
+          stages={filteredStages}
           isLoading={isLoading}
           onMoveStage={handleMoveStage}
         />
@@ -163,7 +170,7 @@ export default function PipelinePage() {
       {view === 'split' && (
         <PipelineSplit
           engagements={engagements}
-          stages={stages ?? []}
+          stages={filteredStages}
           isLoading={isLoading}
         />
       )}
