@@ -42,6 +42,15 @@ export function useGenerateDealSummary() {
   })
 }
 
+export function useGenerateCIMDraft() {
+  return useMutation({
+    mutationFn: async (params: { engagement_id: string; section: string }) => {
+      const { data } = await apiClient.post<{ content: string }>('/ai/cim-draft', params)
+      return data
+    },
+  })
+}
+
 export function useScoreBuyers() {
   const queryClient = useQueryClient()
 

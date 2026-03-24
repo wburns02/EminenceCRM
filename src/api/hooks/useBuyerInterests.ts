@@ -52,6 +52,29 @@ export function useAddBuyers() {
   })
 }
 
+export function useAllBuyerInterests(engagementIds: string[]) {
+  return useQuery({
+    queryKey: ['all-buyer-interests', engagementIds],
+    queryFn: async () => {
+      const results: BuyerInterest[] = []
+      // Fetch buyer interests for each engagement in parallel
+      const responses = await Promise.all(
+        engagementIds.map((id) =>
+          apiClient
+            .get<PaginatedResponse<BuyerInterest>>(`/engagements/${id}/buyers`)
+            .then((res) => res.data.items ?? [])
+            .catch(() => [] as BuyerInterest[])
+        )
+      )
+      for (const items of responses) {
+        results.push(...items)
+      }
+      return results
+    },
+    enabled: engagementIds.length > 0,
+  })
+}
+
 export function useUpdateBuyerStatus() {
   const queryClient = useQueryClient()
 

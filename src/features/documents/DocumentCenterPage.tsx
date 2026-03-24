@@ -8,8 +8,11 @@ import { Tabs, TabList, Tab, TabPanel } from '@/components/ui/Tabs'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Pagination } from '@/components/ui/Pagination'
+import { Dialog } from '@/components/ui/Dialog'
+import { Input } from '@/components/ui/Input'
+import { FormField } from '@/components/ui/FormField'
 import { useEngagements } from '@/api/hooks/useEngagements'
-import { useDocuments } from '@/api/hooks/useDocuments'
+import { useDocuments, useUploadDocument, useLinkDocument } from '@/api/hooks/useDocuments'
 import {
   DOCUMENT_TYPES,
   DOCUMENT_TYPE_LABELS,
@@ -93,7 +96,7 @@ function DocumentRow({ doc }: { doc: Document }) {
   )
 }
 
-function AllDocumentsView() {
+function AllDocumentsView({ filtersVisible = true }: { filtersVisible?: boolean }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -118,21 +121,23 @@ function AllDocumentsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1) }} placeholder="Search documents..." className="w-56" />
-        <Select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }} className="w-36">
-          <option value="all">All Types</option>
-          {DOCUMENT_TYPES.map((t) => (
-            <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>
-          ))}
-        </Select>
-        <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="w-36">
-          <option value="all">All Statuses</option>
-          {Object.entries(DOCUMENT_STATUS_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </Select>
-      </div>
+      {filtersVisible && (
+        <div className="flex flex-wrap items-center gap-3">
+          <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1) }} placeholder="Search documents..." className="w-56" />
+          <Select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }} className="w-36">
+            <option value="all">All Types</option>
+            {DOCUMENT_TYPES.map((t) => (
+              <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>
+            ))}
+          </Select>
+          <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="w-36">
+            <option value="all">All Statuses</option>
+            {Object.entries(DOCUMENT_STATUS_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </Select>
+        </div>
+      )}
 
       <div className="bg-bg-card border border-border rounded-lg overflow-hidden">
         {isLoading ? (
@@ -249,6 +254,54 @@ function ByEngagementView() {
 }
 
 export default function DocumentCenterPage() {
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [filtersVisible, setFiltersVisible] = useState(true)
+
+  // Upload dialog state
+  const [uploadEngagement, setUploadEngagement] = useState('')
+  const [uploadType, setUploadType] = useState('other')
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const uploadDoc = useUploadDocument()
+
+  // Link dialog state
+  const [linkEngagement, setLinkEngagement] = useState('')
+  const [linkName, setLinkName] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkType, setLinkType] = useState('other')
+  const linkDoc = useLinkDocument()
+
+  const { data: engagementsData } = useEngagements({ page_size: 200 })
+  const engagements = engagementsData?.items ?? []
+
+  const handleUpload = async () => {
+    if (!uploadFile || !uploadEngagement) return
+    await uploadDoc.mutateAsync({
+      file: uploadFile,
+      engagementId: uploadEngagement,
+      type: uploadType,
+    })
+    setUploadFile(null)
+    setUploadEngagement('')
+    setUploadType('other')
+    setUploadOpen(false)
+  }
+
+  const handleLink = async () => {
+    if (!linkName || !linkUrl || !linkEngagement) return
+    await linkDoc.mutateAsync({
+      engagementId: linkEngagement,
+      name: linkName,
+      type: linkType,
+      externalUrl: linkUrl,
+    })
+    setLinkName('')
+    setLinkUrl('')
+    setLinkType('other')
+    setLinkEngagement('')
+    setLinkOpen(false)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -258,15 +311,19 @@ export default function DocumentCenterPage() {
           <h1 className="text-2xl font-bold text-text-primary">Document Center</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
             <Upload className="h-4 w-4" />
             Upload
           </Button>
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" onClick={() => setLinkOpen(true)}>
             <Link2 className="h-4 w-4" />
             Link
           </Button>
-          <Button variant="ghost" size="sm" disabled>
+          <Button
+            variant={filtersVisible ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setFiltersVisible((v) => !v)}
+          >
             <Filter className="h-4 w-4" />
           </Button>
         </div>
@@ -285,13 +342,96 @@ export default function DocumentCenterPage() {
         </TabPanel>
 
         <TabPanel value="all">
-          <AllDocumentsView />
+          <AllDocumentsView filtersVisible={filtersVisible} />
         </TabPanel>
 
         <TabPanel value="recent">
           <RecentDocumentsView />
         </TabPanel>
       </Tabs>
+
+      {/* Upload Dialog */}
+      <Dialog open={uploadOpen} onClose={() => setUploadOpen(false)} title="Upload Document" size="sm">
+        <div className="space-y-4">
+          <FormField label="Engagement" required>
+            <Select value={uploadEngagement} onChange={(e) => setUploadEngagement(e.target.value)}>
+              <option value="">Select engagement...</option>
+              {engagements.map((eng) => (
+                <option key={eng.id} value={eng.id}>{eng.codename ?? eng.name}</option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label="Document Type">
+            <Select value={uploadType} onChange={(e) => setUploadType(e.target.value)}>
+              {DOCUMENT_TYPES.map((t) => (
+                <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label="File" required>
+            <Input
+              type="file"
+              accept=".pdf,.docx,.xlsx,.pptx,.doc,.xls,.ppt,.txt,.csv"
+              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+            />
+          </FormField>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setUploadOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleUpload}
+              disabled={!uploadFile || !uploadEngagement}
+              loading={uploadDoc.isPending}
+            >
+              Upload
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Link Dialog */}
+      <Dialog open={linkOpen} onClose={() => setLinkOpen(false)} title="Link External Document" size="sm">
+        <div className="space-y-4">
+          <FormField label="Engagement" required>
+            <Select value={linkEngagement} onChange={(e) => setLinkEngagement(e.target.value)}>
+              <option value="">Select engagement...</option>
+              {engagements.map((eng) => (
+                <option key={eng.id} value={eng.id}>{eng.codename ?? eng.name}</option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label="Document Name" required>
+            <Input
+              value={linkName}
+              onChange={(e) => setLinkName(e.target.value)}
+              placeholder="Q3 Financial Model"
+            />
+          </FormField>
+          <FormField label="URL" required>
+            <Input
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://docs.google.com/..."
+            />
+          </FormField>
+          <FormField label="Document Type">
+            <Select value={linkType} onChange={(e) => setLinkType(e.target.value)}>
+              {DOCUMENT_TYPES.map((t) => (
+                <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>
+              ))}
+            </Select>
+          </FormField>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setLinkOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleLink}
+              disabled={!linkName || !linkUrl || !linkEngagement}
+              loading={linkDoc.isPending}
+            >
+              Add Link
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }

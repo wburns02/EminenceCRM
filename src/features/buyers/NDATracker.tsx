@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { FileCheck, AlertTriangle, Clock, Search } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Badge } from '@/components/ui/Badge'
@@ -6,11 +6,68 @@ import { StatsCard } from '@/components/ui/StatsCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useEngagements } from '@/api/hooks/useEngagements'
+import { useAllBuyerInterests } from '@/api/hooks/useBuyerInterests'
 import { formatDate } from '@/lib/utils'
 import type { Engagement } from '@/api/types/engagement'
 
+// Statuses at or after NDA being sent (teaser_sent means NDA is typically sent with teaser)
+const NDA_SENT_STATUSES = new Set([
+  'teaser_sent',
+  'nda_signed',
+  'cim_sent',
+  'ioi_received',
+  'loi_received',
+  'due_diligence',
+  'closed',
+])
+
+// Statuses at or after NDA being signed
+const NDA_SIGNED_STATUSES = new Set([
+  'nda_signed',
+  'cim_sent',
+  'ioi_received',
+  'loi_received',
+  'due_diligence',
+  'closed',
+])
+
 function NDATrackerInner({ engagements }: { engagements: Engagement[] }) {
   const [search, setSearch] = useState('')
+
+  const engagementIds = useMemo(
+    () => engagements.map((e) => e.id),
+    [engagements]
+  )
+
+  const { data: allBuyers } = useAllBuyerInterests(engagementIds)
+
+  const stats = useMemo(() => {
+    const buyers = allBuyers ?? []
+    const now = Date.now()
+    const fiveDays = 5 * 24 * 60 * 60 * 1000
+
+    let ndaSent = 0
+    let ndaSigned = 0
+    let overdue = 0
+
+    for (const buyer of buyers) {
+      if (NDA_SENT_STATUSES.has(buyer.status)) {
+        ndaSent++
+      }
+      if (NDA_SIGNED_STATUSES.has(buyer.status)) {
+        ndaSigned++
+      }
+      // Overdue: NDA sent (teaser_sent) but not yet signed, and it's been > 5 days
+      if (buyer.status === 'teaser_sent' && buyer.status_changed_at) {
+        const changedAt = new Date(buyer.status_changed_at).getTime()
+        if (now - changedAt > fiveDays) {
+          overdue++
+        }
+      }
+    }
+
+    return { ndaSent, ndaSigned, overdue }
+  }, [allBuyers])
 
   const filteredEngagements = engagements.filter(
     (e) =>
@@ -32,19 +89,19 @@ function NDATrackerInner({ engagements }: { engagements: Engagement[] }) {
         />
         <StatsCard
           label="NDAs Sent"
-          value={0}
+          value={stats.ndaSent}
           icon={<Clock className="h-5 w-5" />}
           accentColor="border-l-accent-teal"
         />
         <StatsCard
           label="NDAs Signed"
-          value={0}
+          value={stats.ndaSigned}
           icon={<FileCheck className="h-5 w-5" />}
           accentColor="border-l-success"
         />
         <StatsCard
           label="Overdue"
-          value={0}
+          value={stats.overdue}
           icon={<AlertTriangle className="h-5 w-5" />}
           accentColor="border-l-danger"
         />

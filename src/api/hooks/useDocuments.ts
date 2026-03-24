@@ -7,12 +7,11 @@ export function useDocuments(engagementId: string | undefined) {
   return useQuery({
     queryKey: ['documents', { engagement_id: engagementId }],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Document>>('/documents', {
-        params: { engagement_id: engagementId, page_size: 100 },
-      })
+      const params: Record<string, string | number> = { page_size: 100 }
+      if (engagementId) params.engagement_id = engagementId
+      const { data } = await apiClient.get<PaginatedResponse<Document>>('/documents', { params })
       return data
     },
-    enabled: !!engagementId,
   })
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Sparkles, Plus, Building2, Check } from 'lucide-react'
+import { Search, Sparkles, Plus, Building2, Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Select } from '@/components/ui/Select'
@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useCompanies } from '@/api/hooks/useCompanies'
 import { useAddBuyers } from '@/api/hooks/useBuyerInterests'
+import { useScoreBuyers } from '@/api/hooks/useAI'
 import { COMPANY_TYPE_LABELS, COMPANY_TYPE_COLORS, INDUSTRIES } from '@/api/types/company'
 import type { Company } from '@/api/types/company'
 
@@ -26,6 +27,7 @@ export default function BuyerUniverseBuilder({
   const [typeFilter, setTypeFilter] = useState('all')
   const [industryFilter, setIndustryFilter] = useState('all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [aiResults, setAiResults] = useState<Array<{ buyer_id: string; score: number; reasoning: string }>>([])
 
   const { data, isLoading } = useCompanies({
     search,
@@ -35,6 +37,12 @@ export default function BuyerUniverseBuilder({
   })
 
   const addBuyers = useAddBuyers()
+  const scoreBuyers = useScoreBuyers()
+
+  const handleAISuggestions = async () => {
+    const result = await scoreBuyers.mutateAsync(engagementId)
+    setAiResults(result.results ?? [])
+  }
 
   const companies = (data?.items ?? []).filter(
     (c) => !existingBuyerCompanyIds.includes(c.id)
@@ -69,7 +77,12 @@ export default function BuyerUniverseBuilder({
           <Search className="h-5 w-5 text-primary" />
           Buyer Universe Builder
         </h3>
-        <Button variant="outline" size="sm" disabled>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleAISuggestions}
+          loading={scoreBuyers.isPending}
+        >
           <Sparkles className="h-4 w-4" />
           AI Suggestions
         </Button>
@@ -119,6 +132,51 @@ export default function BuyerUniverseBuilder({
             <Plus className="h-4 w-4" />
             Add to Deal
           </Button>
+        </div>
+      )}
+
+      {/* AI Suggestions Results */}
+      {scoreBuyers.isPending && (
+        <div className="flex items-center gap-2 text-sm text-text-muted py-3">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Running AI buyer matching...
+        </div>
+      )}
+
+      {aiResults.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            AI-Suggested Buyers ({aiResults.length})
+          </h4>
+          <div className="bg-primary/5 border border-primary/20 rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-primary/10">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary uppercase">Buyer</th>
+                  <th className="px-3 py-2 text-center text-xs font-medium text-text-secondary uppercase">Score</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary uppercase">Reasoning</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aiResults.sort((a, b) => b.score - a.score).map((r) => (
+                  <tr key={r.buyer_id} className="border-b border-primary/10 last:border-0">
+                    <td className="px-3 py-2 text-sm font-medium text-text-primary">{r.buyer_id}</td>
+                    <td className="px-3 py-2 text-center">
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${
+                        r.score >= 80 ? 'bg-green-100 text-green-700' :
+                        r.score >= 50 ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-600'
+                      }`}>
+                        {r.score}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-text-secondary">{r.reasoning}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
