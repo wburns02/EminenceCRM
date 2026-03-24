@@ -13,6 +13,12 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('eminence_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+
+  // Ensure trailing slash on API paths to avoid 307 redirects that drop auth headers
+  if (config.url && !config.url.endsWith('/')) {
+    config.url += '/'
+  }
+
   return config
 })
 
