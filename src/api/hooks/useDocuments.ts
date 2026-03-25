@@ -40,11 +40,12 @@ export function useUploadDocument() {
     }) => {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('engagement_id', engagementId)
-      formData.append('type', type)
-      if (name) formData.append('name', name)
+      formData.append('name', name || file.name)
+      formData.append('doc_type', type)
+      if (engagementId) formData.append('engagement_id', engagementId)
 
-      const { data } = await apiClient.post<Document>('/documents/upload', formData, {
+      // Don't set Content-Type — let browser set multipart boundary automatically
+      const { data } = await apiClient.post('/documents/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       return data

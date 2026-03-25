@@ -14,8 +14,14 @@ apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('eminence_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
 
-  // Ensure trailing slash on API paths to avoid 307 redirects that drop auth headers
-  if (config.url && !config.url.endsWith('/')) {
+  // Handle FormData: remove JSON content-type so browser sets multipart boundary
+  const isFormData = config.data instanceof FormData
+  if (isFormData) {
+    delete config.headers['Content-Type']
+  }
+
+  // Add trailing slash for non-FormData requests to avoid 307 redirects that drop auth headers
+  if (config.url && !config.url.endsWith('/') && !isFormData) {
     config.url += '/'
   }
 
