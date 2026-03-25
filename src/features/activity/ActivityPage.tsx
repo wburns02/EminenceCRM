@@ -31,7 +31,7 @@ export default function ActivityPage() {
   const [formDescription, setFormDescription] = useState('')
   const [formEngagementId, setFormEngagementId] = useState('')
 
-  const { data: activitiesData, isLoading } = useRecentActivities(200)
+  const { data: activitiesData, isLoading } = useRecentActivities(100)
   const { data: engagementsData } = useEngagements({ page_size: 100 })
   const createActivity = useCreateActivity()
 
