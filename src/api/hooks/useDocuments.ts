@@ -3,6 +3,11 @@ import apiClient from '@/api/client'
 import type { Document } from '@/api/types/document'
 import type { PaginatedResponse } from '@/api/types/common'
 
+// Normalize backend doc_type to frontend type field
+function normalizeDoc(doc: Record<string, unknown>): Document {
+  return { ...doc, type: (doc.type as string) || (doc.doc_type as string) || 'other' } as Document
+}
+
 export function useDocuments(engagementId: string | undefined) {
   return useQuery({
     queryKey: ['documents', { engagement_id: engagementId }],
@@ -10,7 +15,10 @@ export function useDocuments(engagementId: string | undefined) {
       const params: Record<string, string | number> = { page_size: 100 }
       if (engagementId) params.engagement_id = engagementId
       const { data } = await apiClient.get<PaginatedResponse<Document>>('/documents', { params })
-      return data
+      return {
+        ...data,
+        items: data.items.map(normalizeDoc),
+      }
     },
   })
 }

@@ -3,7 +3,8 @@ import { z } from 'zod'
 export const DocumentSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.string(), // 'cim' | 'nda' | 'loi' | 'ioi' | 'financial' | 'legal' | 'teaser' | 'other'
+  doc_type: z.string().optional(),
+  type: z.string().optional(),
   engagement_id: z.string().nullable().optional(),
   file_url: z.string().nullable().optional(),
   external_url: z.string().nullable().optional(),
@@ -19,7 +20,8 @@ export const DocumentSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type Document = z.infer<typeof DocumentSchema>
+// Document type with normalized 'type' field (backend sends doc_type)
+export type Document = z.infer<typeof DocumentSchema> & { type: string }
 
 export const DOCUMENT_TYPES = [
   'cim',
