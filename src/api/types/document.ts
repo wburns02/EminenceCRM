@@ -13,6 +13,8 @@ export const DocumentSchema = z.object({
   uploaded_by_name: z.string().nullable().optional(),
   file_size: z.number().nullable().optional(),
   mime_type: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  storage_type: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string().nullable().optional(),
 })

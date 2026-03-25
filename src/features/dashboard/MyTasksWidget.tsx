@@ -61,6 +61,7 @@ function MyTasksSkeleton() {
 }
 
 export default function MyTasksWidget() {
+  const navigate = useNavigate()
   const { data, isLoading, isError } = useMyTasks()
 
   if (isLoading) return <MyTasksSkeleton />
@@ -87,7 +88,7 @@ export default function MyTasksWidget() {
 
   return (
     <Card className="flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate('/tasks')}>
         <CardTitle>My Tasks</CardTitle>
         {overdue.length > 0 && (
           <Badge variant="danger">{overdue.length} overdue</Badge>

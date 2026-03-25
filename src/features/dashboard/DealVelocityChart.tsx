@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -33,6 +34,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
 }
 
 export default function DealVelocityChart() {
+  const navigate = useNavigate()
   const { data, isLoading, isError } = useVelocityReport()
 
   if (isLoading) return <VelocitySkeleton />
@@ -52,7 +54,7 @@ export default function DealVelocityChart() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate('/reports/pipeline')}>
         <CardTitle>Deal Velocity</CardTitle>
         <span className="text-sm text-text-secondary">
           Avg. close: <strong className="text-text-primary">{data?.avg_days_to_close?.toFixed(0) ?? '---'} days</strong>

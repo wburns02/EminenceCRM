@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { FileText, Upload, Link2, Eye, Download, Filter } from 'lucide-react'
+import { FileText, Upload, Link2, Eye, Download, Filter, Loader2, Scan } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Select } from '@/components/ui/Select'
@@ -10,9 +10,10 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Pagination } from '@/components/ui/Pagination'
 import { Dialog } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import { FormField } from '@/components/ui/FormField'
 import { useEngagements } from '@/api/hooks/useEngagements'
-import { useDocuments, useUploadDocument, useLinkDocument } from '@/api/hooks/useDocuments'
+import { useDocuments, useUploadDocument, useLinkDocument, useUpdateDocument, useOCRDocument } from '@/api/hooks/useDocuments'
 import {
   DOCUMENT_TYPES,
   DOCUMENT_TYPE_LABELS,
@@ -39,9 +40,15 @@ const TYPE_COLORS: Record<string, string> = {
   other: 'bg-gray-50 text-gray-600',
 }
 
-function DocumentRow({ doc }: { doc: Document }) {
+function DocumentRow({ doc, onEdit }: { doc: Document; onEdit?: (doc: Document) => void }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors border-b border-border last:border-0">
+    <div
+      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors border-b border-border last:border-0 cursor-pointer"
+      onClick={() => onEdit?.(doc)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onEdit?.(doc) }}
+    >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <FileText className="h-5 w-5 text-text-muted flex-shrink-0" />
         <div className="min-w-0">
@@ -75,6 +82,7 @@ function DocumentRow({ doc }: { doc: Document }) {
               rel="noopener noreferrer"
               className="p-1.5 rounded hover:bg-gray-100 text-text-muted hover:text-primary transition-colors"
               title="Download"
+              onClick={(e) => e.stopPropagation()}
             >
               <Download className="h-4 w-4" />
             </a>
@@ -86,6 +94,7 @@ function DocumentRow({ doc }: { doc: Document }) {
               rel="noopener noreferrer"
               className="p-1.5 rounded hover:bg-gray-100 text-text-muted hover:text-primary transition-colors"
               title="View"
+              onClick={(e) => e.stopPropagation()}
             >
               <Eye className="h-4 w-4" />
             </a>
@@ -96,7 +105,7 @@ function DocumentRow({ doc }: { doc: Document }) {
   )
 }
 
-function AllDocumentsView({ filtersVisible = true }: { filtersVisible?: boolean }) {
+function AllDocumentsView({ filtersVisible = true, onEdit }: { filtersVisible?: boolean; onEdit?: (doc: Document) => void }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -155,7 +164,7 @@ function AllDocumentsView({ filtersVisible = true }: { filtersVisible?: boolean 
         ) : (
           <>
             {paged.map((doc) => (
-              <DocumentRow key={doc.id} doc={doc} />
+              <DocumentRow key={doc.id} doc={doc} onEdit={onEdit} />
             ))}
             {totalPages > 1 && (
               <div className="flex justify-center py-3 border-t border-border">
@@ -169,7 +178,7 @@ function AllDocumentsView({ filtersVisible = true }: { filtersVisible?: boolean 
   )
 }
 
-function RecentDocumentsView() {
+function RecentDocumentsView({ onEdit }: { onEdit?: (doc: Document) => void }) {
   const { data, isLoading } = useDocuments(undefined)
 
   const recent = useMemo(() => {
@@ -202,7 +211,7 @@ function RecentDocumentsView() {
   return (
     <div className="bg-bg-card border border-border rounded-lg overflow-hidden">
       {recent.map((doc) => (
-        <DocumentRow key={doc.id} doc={doc} />
+        <DocumentRow key={doc.id} doc={doc} onEdit={onEdit} />
       ))}
     </div>
   )
@@ -270,6 +279,54 @@ export default function DocumentCenterPage() {
   const [linkUrl, setLinkUrl] = useState('')
   const [linkType, setLinkType] = useState('other')
   const linkDoc = useLinkDocument()
+
+  // Detail/edit dialog state
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editType, setEditType] = useState('other')
+  const [editStatus, setEditStatus] = useState('draft')
+  const [editNotes, setEditNotes] = useState('')
+  const [ocrText, setOcrText] = useState('')
+  const updateDoc = useUpdateDocument()
+  const ocrDoc = useOCRDocument()
+
+  const openDocDetail = (doc: Document) => {
+    setEditingDoc(doc)
+    setEditName(doc.name)
+    setEditType(doc.type)
+    setEditStatus(doc.status ?? 'draft')
+    setEditNotes(doc.notes ?? '')
+    setOcrText('')
+  }
+
+  const closeDocDetail = () => {
+    setEditingDoc(null)
+    setEditName('')
+    setEditType('other')
+    setEditStatus('draft')
+    setEditNotes('')
+    setOcrText('')
+  }
+
+  const handleDocUpdate = async () => {
+    if (!editingDoc) return
+    await updateDoc.mutateAsync({
+      id: editingDoc.id,
+      name: editName,
+      doc_type: editType,
+      status: editStatus,
+      notes: editNotes,
+    })
+    closeDocDetail()
+  }
+
+  const handleOCR = async () => {
+    if (!editingDoc) return
+    const result = await ocrDoc.mutateAsync(editingDoc.id)
+    setOcrText(result.text)
+    // Update local notes state with the appended OCR text
+    setEditNotes((prev) => (prev ? prev + '\n\n--- OCR Extracted Text ---\n' + result.text : '--- OCR Extracted Text ---\n' + result.text))
+  }
 
   const { data: engagementsData } = useEngagements({ page_size: 100 })
   const engagements = engagementsData?.items ?? []
@@ -342,11 +399,11 @@ export default function DocumentCenterPage() {
         </TabPanel>
 
         <TabPanel value="all">
-          <AllDocumentsView filtersVisible={filtersVisible} />
+          <AllDocumentsView filtersVisible={filtersVisible} onEdit={openDocDetail} />
         </TabPanel>
 
         <TabPanel value="recent">
-          <RecentDocumentsView />
+          <RecentDocumentsView onEdit={openDocDetail} />
         </TabPanel>
       </Tabs>
 
@@ -431,6 +488,104 @@ export default function DocumentCenterPage() {
             </Button>
           </div>
         </div>
+      </Dialog>
+
+      {/* Document Detail / Edit Dialog */}
+      <Dialog open={!!editingDoc} onClose={closeDocDetail} title="Document Details" size="md">
+        {editingDoc && (
+          <div className="space-y-4">
+            {/* Read-only info */}
+            <div className="flex items-center gap-3 text-xs text-text-muted bg-gray-50 rounded-lg p-3">
+              <span>Version {editingDoc.version ?? 1}</span>
+              <span>Uploaded {formatDate(editingDoc.created_at)}</span>
+              {editingDoc.uploaded_by_name && <span>by {editingDoc.uploaded_by_name}</span>}
+              {editingDoc.storage_type && (
+                <Badge variant="default" className="text-[10px]">{editingDoc.storage_type === 'external_link' ? 'External Link' : 'Uploaded File'}</Badge>
+              )}
+            </div>
+
+            <FormField label="Name">
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Document name"
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Type">
+                <Select value={editType} onChange={(e) => setEditType(e.target.value)}>
+                  {DOCUMENT_TYPES.map((t) => (
+                    <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>
+                  ))}
+                </Select>
+              </FormField>
+
+              <FormField label="Status">
+                <Select value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
+                  {Object.entries(DOCUMENT_STATUS_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
+                </Select>
+              </FormField>
+            </div>
+
+            <FormField label="Notes">
+              <Textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Document notes..."
+                rows={3}
+              />
+            </FormField>
+
+            {/* OCR Section */}
+            {editingDoc.storage_type !== 'external_link' && (
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-text-primary">PDF Text Extraction (OCR)</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOCR}
+                    disabled={ocrDoc.isPending}
+                  >
+                    {ocrDoc.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Extracting...
+                      </>
+                    ) : (
+                      <>
+                        <Scan className="h-4 w-4" />
+                        Extract Text (OCR)
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {ocrText && (
+                  <Textarea
+                    value={ocrText}
+                    readOnly
+                    rows={8}
+                    className="font-mono text-xs bg-gray-50"
+                  />
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="secondary" onClick={closeDocDetail}>Cancel</Button>
+              <Button
+                onClick={handleDocUpdate}
+                disabled={!editName.trim()}
+                loading={updateDoc.isPending}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        )}
       </Dialog>
     </div>
   )

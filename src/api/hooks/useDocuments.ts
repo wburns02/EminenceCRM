@@ -75,3 +75,29 @@ export function useLinkDocument() {
     },
   })
 }
+
+export function useUpdateDocument() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; name?: string; doc_type?: string; status?: string; notes?: string }) => {
+      const { data } = await apiClient.patch(`/documents/${id}`, payload)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+  })
+}
+
+export function useOCRDocument() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      const { data } = await apiClient.post(`/documents/${documentId}/ocr`)
+      return data as { text: string; pages: number; filename: string }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+  })
+}

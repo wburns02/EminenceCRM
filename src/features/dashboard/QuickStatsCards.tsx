@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { Briefcase, FileText, FileCheck, DollarSign } from 'lucide-react'
 import { StatsCard } from '@/components/ui/StatsCard'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -27,6 +28,7 @@ function QuickStatsCardsSkeleton() {
 }
 
 export default function QuickStatsCards() {
+  const navigate = useNavigate()
   const pipeline = usePipelineReport()
   const revenue = useRevenueReport()
   const funnel = useFunnelReport()
@@ -42,30 +44,38 @@ export default function QuickStatsCards() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatsCard
-        label="Active Deals"
-        value={activeDeals}
-        icon={<Briefcase className="h-5 w-5" />}
-        accentColor="border-l-primary"
-      />
-      <StatsCard
-        label="IOIs Pending"
-        value={ioisPending}
-        icon={<FileText className="h-5 w-5" />}
-        accentColor="border-l-accent-gold"
-      />
-      <StatsCard
-        label="LOIs Outstanding"
-        value={lois}
-        icon={<FileCheck className="h-5 w-5" />}
-        accentColor="border-l-accent-teal"
-      />
-      <StatsCard
-        label="Fees Earned YTD"
-        value={formatDollars(closedYTD)}
-        icon={<DollarSign className="h-5 w-5" />}
-        accentColor="border-l-success"
-      />
+      <div onClick={() => navigate('/pipeline')} className="cursor-pointer hover:shadow-md transition-shadow rounded-lg">
+        <StatsCard
+          label="Active Deals"
+          value={activeDeals}
+          icon={<Briefcase className="h-5 w-5" />}
+          accentColor="border-l-primary"
+        />
+      </div>
+      <div onClick={() => navigate('/pipeline')} className="cursor-pointer hover:shadow-md transition-shadow rounded-lg">
+        <StatsCard
+          label="IOIs Pending"
+          value={ioisPending}
+          icon={<FileText className="h-5 w-5" />}
+          accentColor="border-l-accent-gold"
+        />
+      </div>
+      <div onClick={() => navigate('/pipeline')} className="cursor-pointer hover:shadow-md transition-shadow rounded-lg">
+        <StatsCard
+          label="LOIs Outstanding"
+          value={lois}
+          icon={<FileCheck className="h-5 w-5" />}
+          accentColor="border-l-accent-teal"
+        />
+      </div>
+      <div onClick={() => navigate('/reports/revenue')} className="cursor-pointer hover:shadow-md transition-shadow rounded-lg">
+        <StatsCard
+          label="Fees Earned YTD"
+          value={formatDollars(closedYTD)}
+          icon={<DollarSign className="h-5 w-5" />}
+          accentColor="border-l-success"
+        />
+      </div>
     </div>
   )
 }

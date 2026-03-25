@@ -57,8 +57,20 @@ export default function ActivityTimeline({ activities, className, onEdit }: Acti
           const Icon = typeIcons[activity.type] ?? MessageSquare
           const colorClass = typeColors[activity.type] ?? 'bg-gray-100 text-gray-500'
 
+          const isEditable = onEdit && !SYSTEM_TYPES.has(activity.type)
+
           return (
-            <div key={activity.id} className="flex gap-4 relative">
+            <div
+              key={activity.id}
+              className={cn(
+                'flex gap-4 relative rounded-lg px-1 -mx-1 transition-colors',
+                isEditable && 'cursor-pointer hover:bg-gray-50'
+              )}
+              onClick={() => isEditable && onEdit(activity)}
+              role={isEditable ? 'button' : undefined}
+              tabIndex={isEditable ? 0 : undefined}
+              onKeyDown={isEditable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onEdit!(activity) } : undefined}
+            >
               {/* Icon */}
               <div
                 className={cn(
@@ -78,9 +90,9 @@ export default function ActivityTimeline({ activities, className, onEdit }: Acti
                   <span className="text-xs text-text-muted capitalize bg-gray-50 px-1.5 py-0.5 rounded">
                     {activity.type}
                   </span>
-                  {onEdit && !SYSTEM_TYPES.has(activity.type) && (
+                  {isEditable && (
                     <button
-                      onClick={() => onEdit(activity)}
+                      onClick={(e) => { e.stopPropagation(); onEdit!(activity) }}
                       className="p-0.5 rounded hover:bg-gray-100 transition-colors ml-auto"
                       title="Edit activity"
                     >

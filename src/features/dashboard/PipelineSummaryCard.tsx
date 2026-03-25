@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -42,6 +43,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
 }
 
 export default function PipelineSummaryCard() {
+  const navigate = useNavigate()
   const { data, isLoading, isError } = usePipelineReport()
 
   if (isLoading) return <PipelineSummarySkeleton />
@@ -61,7 +63,7 @@ export default function PipelineSummaryCard() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate('/pipeline')}>
         <CardTitle>Pipeline Summary</CardTitle>
         <span className="text-sm text-text-secondary">
           {data?.total_deals ?? 0} deals &middot; {formatValue(data?.total_value ?? 0)}

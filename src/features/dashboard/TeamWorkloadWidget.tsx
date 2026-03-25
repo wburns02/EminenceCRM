@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -72,6 +73,7 @@ function TeamWorkloadSkeleton() {
 }
 
 export default function TeamWorkloadWidget() {
+  const navigate = useNavigate()
   const { data, isLoading, isError } = useTeamReport()
 
   if (isLoading) return <TeamWorkloadSkeleton />
@@ -92,7 +94,7 @@ export default function TeamWorkloadWidget() {
 
   return (
     <Card className="flex flex-col">
-      <CardHeader>
+      <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate('/settings/team')}>
         <CardTitle>Team Workload</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto max-h-80">

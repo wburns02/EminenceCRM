@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -74,6 +75,7 @@ function AIAlertsSkeleton() {
 }
 
 export default function AIAlertsWidget() {
+  const navigate = useNavigate()
   const { data, isLoading, isError } = useAIAlerts()
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
@@ -98,7 +100,7 @@ export default function AIAlertsWidget() {
 
   return (
     <Card className="flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate('/ai')}>
         <CardTitle>AI Insights</CardTitle>
         {alerts.length > 0 && (
           <Badge variant="primary">{alerts.length}</Badge>

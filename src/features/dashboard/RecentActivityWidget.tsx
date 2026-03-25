@@ -88,6 +88,7 @@ function RecentActivitySkeleton() {
 }
 
 export default function RecentActivityWidget() {
+  const navigate = useNavigate()
   const { data, isLoading, isError } = useRecentActivities(20)
 
   if (isLoading) return <RecentActivitySkeleton />
@@ -107,7 +108,7 @@ export default function RecentActivityWidget() {
 
   return (
     <Card className="flex flex-col">
-      <CardHeader>
+      <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => navigate('/activity')}>
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto max-h-80">

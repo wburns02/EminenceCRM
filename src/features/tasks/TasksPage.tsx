@@ -59,7 +59,13 @@ function TaskCard({ task, onToggle, onEdit }: { task: Task; onToggle: (task: Tas
         )}
       </button>
 
-      <div className="flex-1 min-w-0">
+      <div
+        className="flex-1 min-w-0 cursor-pointer"
+        onClick={() => onEdit(task)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onEdit(task) }}
+      >
         <div className="flex items-center gap-2">
           <span className={`text-sm font-medium ${isComplete ? 'line-through text-text-muted' : 'text-text-primary'}`}>
             {task.title}
@@ -83,19 +89,19 @@ function TaskCard({ task, onToggle, onEdit }: { task: Task; onToggle: (task: Tas
             <span>{task.assigned_to_name}</span>
           )}
           {task.engagement_codename && (
-            <button
-              className="text-primary hover:underline flex items-center gap-0.5"
-              onClick={() => task.engagement_id && navigate(`/engagements/${task.engagement_id}`)}
+            <span
+              className="text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); task.engagement_id && navigate(`/engagements/${task.engagement_id}`) }}
             >
               {task.engagement_codename}
               <ChevronRight className="h-3 w-3" />
-            </button>
+            </span>
           )}
         </div>
       </div>
 
       <button
-        onClick={() => onEdit(task)}
+        onClick={(e) => { e.stopPropagation(); onEdit(task) }}
         className="mt-0.5 flex-shrink-0 p-1 rounded hover:bg-gray-100 transition-colors"
         title="Edit task"
       >
