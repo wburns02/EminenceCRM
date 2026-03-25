@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Circle,
   CheckCircle,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
@@ -31,7 +32,7 @@ import { formatDate } from '@/lib/utils'
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
 
-function TaskCard({ task, onToggle }: { task: Task; onToggle: (task: Task) => void }) {
+function TaskCard({ task, onToggle, onEdit }: { task: Task; onToggle: (task: Task) => void; onEdit: (task: Task) => void }) {
   const navigate = useNavigate()
   const isComplete = task.status === 'completed'
   const isOverdue =
@@ -92,15 +93,24 @@ function TaskCard({ task, onToggle }: { task: Task; onToggle: (task: Task) => vo
           )}
         </div>
       </div>
+
+      <button
+        onClick={() => onEdit(task)}
+        className="mt-0.5 flex-shrink-0 p-1 rounded hover:bg-gray-100 transition-colors"
+        title="Edit task"
+      >
+        <Pencil className="h-3.5 w-3.5 text-text-muted" />
+      </button>
     </div>
   )
 }
 
-function TaskGroup({ title, tasks, icon, onToggle }: {
+function TaskGroup({ title, tasks, icon, onToggle, onEdit }: {
   title: string
   tasks: Task[]
   icon: React.ReactNode
   onToggle: (task: Task) => void
+  onEdit: (task: Task) => void
 }) {
   if (tasks.length === 0) return null
 
@@ -113,7 +123,7 @@ function TaskGroup({ title, tasks, icon, onToggle }: {
       </div>
       <div className="space-y-1">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onToggle={onToggle} />
+          <TaskCard key={task.id} task={task} onToggle={onToggle} onEdit={onEdit} />
         ))}
       </div>
     </div>
@@ -135,7 +145,45 @@ export default function TasksPage() {
   const [formDueDate, setFormDueDate] = useState('')
   const [formEngagementId, setFormEngagementId] = useState('')
 
+  // Edit form state
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editPriority, setEditPriority] = useState('medium')
+  const [editDueDate, setEditDueDate] = useState('')
+  const [editEngagementId, setEditEngagementId] = useState('')
+
   const engagements = engagementsData?.items ?? []
+
+  const openEditDialog = (task: Task) => {
+    setEditingTask(task)
+    setEditTitle(task.title)
+    setEditDescription(task.description ?? '')
+    setEditPriority(task.priority)
+    setEditDueDate(task.due_date ? task.due_date.split('T')[0] : '')
+    setEditEngagementId(task.engagement_id ?? '')
+  }
+
+  const closeEditDialog = () => {
+    setEditingTask(null)
+    setEditTitle('')
+    setEditDescription('')
+    setEditPriority('medium')
+    setEditDueDate('')
+    setEditEngagementId('')
+  }
+
+  const handleEdit = async () => {
+    if (!editingTask || !editTitle.trim()) return
+    await updateTask.mutateAsync({
+      id: editingTask.id,
+      title: editTitle,
+      description: editDescription || undefined,
+      priority: editPriority,
+      due_date: editDueDate || undefined,
+    })
+    closeEditDialog()
+  }
 
   const toggleTask = (task: Task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed'
@@ -272,24 +320,28 @@ export default function TasksPage() {
                   tasks={overdue}
                   icon={<AlertTriangle className="h-4 w-4 text-danger" />}
                   onToggle={toggleTask}
+                  onEdit={openEditDialog}
                 />
                 <TaskGroup
                   title="Due Today"
                   tasks={today}
                   icon={<Clock className="h-4 w-4 text-warning" />}
                   onToggle={toggleTask}
+                  onEdit={openEditDialog}
                 />
                 <TaskGroup
                   title="Upcoming"
                   tasks={upcoming}
                   icon={<Calendar className="h-4 w-4 text-primary" />}
                   onToggle={toggleTask}
+                  onEdit={openEditDialog}
                 />
                 <TaskGroup
                   title="Completed"
                   tasks={completed}
                   icon={<CheckCircle className="h-4 w-4 text-success" />}
                   onToggle={toggleTask}
+                  onEdit={openEditDialog}
                 />
               </div>
             )}
@@ -303,7 +355,7 @@ export default function TasksPage() {
             ) : (
               <div className="space-y-1">
                 {[...(myTasks?.overdue ?? []), ...(myTasks?.today ?? []), ...(myTasks?.upcoming ?? []), ...(myTasks?.completed ?? [])].map((task) => (
-                  <TaskCard key={task.id} task={task} onToggle={toggleTask} />
+                  <TaskCard key={task.id} task={task} onToggle={toggleTask} onEdit={openEditDialog} />
                 ))}
               </div>
             )}
@@ -338,7 +390,7 @@ export default function TasksPage() {
                     </div>
                     <div className="space-y-1">
                       {engTasks.map((task) => (
-                        <TaskCard key={task.id} task={task} onToggle={toggleTask} />
+                        <TaskCard key={task.id} task={task} onToggle={toggleTask} onEdit={openEditDialog} />
                       ))}
                     </div>
                   </div>
@@ -404,6 +456,66 @@ export default function TasksPage() {
               loading={createTask.isPending}
             >
               Create Task
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editingTask} onClose={closeEditDialog} title="Edit Task" size="md">
+        <div className="space-y-4">
+          <FormField label="Title" required>
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Task title"
+            />
+          </FormField>
+
+          <FormField label="Description">
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Task details..."
+              rows={2}
+            />
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Priority">
+              <Select value={editPriority} onChange={(e) => setEditPriority(e.target.value)}>
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                ))}
+              </Select>
+            </FormField>
+
+            <FormField label="Due Date">
+              <Input
+                type="date"
+                value={editDueDate}
+                onChange={(e) => setEditDueDate(e.target.value)}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Linked Deal">
+            <Select value={editEngagementId} onChange={(e) => setEditEngagementId(e.target.value)}>
+              <option value="">None</option>
+              {engagements.map((eng) => (
+                <option key={eng.id} value={eng.id}>{eng.codename ?? eng.name}</option>
+              ))}
+            </Select>
+          </FormField>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={closeEditDialog}>Cancel</Button>
+            <Button
+              onClick={handleEdit}
+              disabled={!editTitle.trim()}
+              loading={updateTask.isPending}
+            >
+              Save Changes
             </Button>
           </div>
         </div>

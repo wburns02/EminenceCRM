@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Pagination } from '@/components/ui/Pagination'
 import ActivityTimeline from '@/components/shared/ActivityTimeline'
-import { useRecentActivities, useCreateActivity } from '@/api/hooks/useActivities'
+import { useRecentActivities, useCreateActivity, useUpdateActivity } from '@/api/hooks/useActivities'
 import { useEngagements } from '@/api/hooks/useEngagements'
 import type { Activity } from '@/api/types/activity'
 
@@ -31,9 +31,17 @@ export default function ActivityPage() {
   const [formDescription, setFormDescription] = useState('')
   const [formEngagementId, setFormEngagementId] = useState('')
 
+  // Edit form state
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
+  const [editType, setEditType] = useState('call')
+  const [editSubject, setEditSubject] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editEngagementId, setEditEngagementId] = useState('')
+
   const { data: activitiesData, isLoading } = useRecentActivities(100)
   const { data: engagementsData } = useEngagements({ page_size: 100 })
   const createActivity = useCreateActivity()
+  const updateActivity = useUpdateActivity()
 
   const engagements = engagementsData?.items ?? []
   const allActivities = activitiesData?.items ?? []
@@ -71,6 +79,34 @@ export default function ActivityPage() {
     setFormSubject('')
     setFormDescription('')
     setFormEngagementId('')
+  }
+
+  const openEditActivity = (activity: Activity) => {
+    setEditingActivity(activity)
+    setEditType(activity.type)
+    setEditSubject(activity.subject)
+    setEditDescription(activity.description ?? '')
+    setEditEngagementId(activity.engagement_id ?? '')
+  }
+
+  const closeEditActivity = () => {
+    setEditingActivity(null)
+    setEditType('call')
+    setEditSubject('')
+    setEditDescription('')
+    setEditEngagementId('')
+  }
+
+  const handleEditSubmit = async () => {
+    if (!editingActivity || !editSubject.trim()) return
+    await updateActivity.mutateAsync({
+      id: editingActivity.id,
+      type: editType,
+      subject: editSubject,
+      body: editDescription || undefined,
+      engagement_id: editEngagementId || undefined,
+    })
+    closeEditActivity()
   }
 
   return (
@@ -153,7 +189,7 @@ export default function ActivityPage() {
               />
             ) : (
               <div className="bg-bg-card border border-border rounded-lg p-6">
-                <ActivityTimeline activities={paged} />
+                <ActivityTimeline activities={paged} onEdit={openEditActivity} />
                 {totalPages > 1 && (
                   <div className="flex justify-center pt-4 mt-4 border-t border-border">
                     <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
@@ -175,6 +211,7 @@ export default function ActivityPage() {
             ) : (
               <ActivityTimeline
                 activities={allActivities.filter((a) => a.performed_by_name).slice(0, 25)}
+                onEdit={openEditActivity}
               />
             )}
           </div>
@@ -233,6 +270,63 @@ export default function ActivityPage() {
               loading={createActivity.isPending}
             >
               Log Activity
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Edit Activity Dialog */}
+      <Dialog
+        open={!!editingActivity}
+        onClose={closeEditActivity}
+        title="Edit Activity"
+        size="md"
+      >
+        <div className="space-y-4">
+          <FormField label="Type" required>
+            <Select value={editType} onChange={(e) => setEditType(e.target.value)}>
+              {ACTIVITY_TYPES.map((t) => (
+                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField label="Subject" required>
+            <Input
+              value={editSubject}
+              onChange={(e) => setEditSubject(e.target.value)}
+              placeholder="Activity subject"
+            />
+          </FormField>
+
+          <FormField label="Description">
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Details..."
+              rows={3}
+            />
+          </FormField>
+
+          <FormField label="Linked Deal">
+            <Select value={editEngagementId} onChange={(e) => setEditEngagementId(e.target.value)}>
+              <option value="">None</option>
+              {engagements.map((eng) => (
+                <option key={eng.id} value={eng.id}>{eng.codename ?? eng.name}</option>
+              ))}
+            </Select>
+          </FormField>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={closeEditActivity}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={!editSubject.trim()}
+              loading={updateActivity.isPending}
+            >
+              Save Changes
             </Button>
           </div>
         </div>

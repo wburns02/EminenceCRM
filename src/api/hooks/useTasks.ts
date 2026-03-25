@@ -51,7 +51,7 @@ export function useUpdateTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; status?: string; title?: string; priority?: string; due_date?: string; assigned_to?: string }) => {
+    mutationFn: async ({ id, ...payload }: { id: string; status?: string; title?: string; description?: string; priority?: string; due_date?: string; assigned_to?: string }) => {
       const { data } = await apiClient.patch<Task>(`/tasks/${id}`, payload)
       return data
     },

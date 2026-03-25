@@ -31,6 +31,19 @@ export function useEngagementActivities(engagementId: string | undefined, typeFi
   })
 }
 
+export function useUpdateActivity() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; subject?: string; body?: string; type?: string; engagement_id?: string; duration_minutes?: number }) => {
+      const { data } = await apiClient.patch<Activity>(`/activities/${id}`, payload)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] })
+    },
+  })
+}
+
 export function useCreateActivity() {
   const queryClient = useQueryClient()
 

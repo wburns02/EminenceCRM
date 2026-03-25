@@ -8,6 +8,7 @@ import {
   Settings,
   Calendar,
   MessageSquare,
+  Pencil,
 } from 'lucide-react'
 import type { Activity } from '@/api/types/activity'
 
@@ -29,12 +30,15 @@ const typeColors: Record<string, string> = {
   task: 'bg-teal-100 text-teal-600',
 }
 
+const SYSTEM_TYPES = new Set(['system', 'stage_change', 'task_completed', 'buyer_status_change', 'document_shared', 'document_uploaded'])
+
 interface ActivityTimelineProps {
   activities: Activity[]
   className?: string
+  onEdit?: (activity: Activity) => void
 }
 
-export default function ActivityTimeline({ activities, className }: ActivityTimelineProps) {
+export default function ActivityTimeline({ activities, className, onEdit }: ActivityTimelineProps) {
   if (activities.length === 0) {
     return (
       <div className="text-center py-8 text-sm text-text-muted">
@@ -74,6 +78,15 @@ export default function ActivityTimeline({ activities, className }: ActivityTime
                   <span className="text-xs text-text-muted capitalize bg-gray-50 px-1.5 py-0.5 rounded">
                     {activity.type}
                   </span>
+                  {onEdit && !SYSTEM_TYPES.has(activity.type) && (
+                    <button
+                      onClick={() => onEdit(activity)}
+                      className="p-0.5 rounded hover:bg-gray-100 transition-colors ml-auto"
+                      title="Edit activity"
+                    >
+                      <Pencil className="h-3 w-3 text-text-muted" />
+                    </button>
+                  )}
                 </div>
 
                 {activity.description && (
